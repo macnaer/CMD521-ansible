@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if host else "Add" }} Host — Ansible Inventory{% endblock %}
+{% block content %}
+<h1>{{ "Edit" if host else "Add" }} Host</h1>
+<form method="post" action="{{ '/hosts/%d/edit'|format(host.id) if host else '/hosts/add' }}" class="form">
+    <label for="name">Hostname</label>
+    <input type="text" id="name" name="name" value="{{ host.name if host else '' }}" required>
+
+    <label for="group_id">Group</label>
+    <select id="group_id" name="group_id">
+        <option value="">— None —</option>
+        {% for group in groups %}
+        <option value="{{ group.id }}" {{ "selected" if host and host.group_id == group.id }}>{{ group.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="host_ip">IP Address (ansible_host)</label>
+    <input type="text" id="host_ip" name="host_ip" value="{{ host.vars.get('ansible_host', '') if host else '' }}">
+
+    <label for="host_user">SSH User (ansible_user)</label>
+    <input type="text" id="host_user" name="host_user" value="{{ host.vars.get('ansible_user', '') if host else '' }}">
+
+    <div class="form-actions">
+        <button type="submit">Save</button>
+        <a href="/hosts" class="btn">Cancel</a>
+    </div>
+</form>
+{% endblock %}

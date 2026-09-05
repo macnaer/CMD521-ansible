@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ansible Inventory{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    {% if user is defined and user %}
+    <nav>
+        <div class="nav-brand">Ansible Inventory</div>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/hosts">Hosts</a>
+            <a href="/groups">Groups</a>
+            <a href="/logout" class="nav-logout">Logout ({{ user.username }})</a>
+        </div>
+    </nav>
+    {% endif %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

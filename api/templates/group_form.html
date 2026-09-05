@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if group else "Add" }} Group — Ansible Inventory{% endblock %}
+{% block content %}
+<h1>{{ "Edit" if group else "Add" }} Group</h1>
+<form method="post" action="{{ '/groups/%d/edit'|format(group.id) if group else '/groups/add' }}" class="form">
+    <label for="name">Group Name</label>
+    <input type="text" id="name" name="name" value="{{ group.name if group else '' }}" required>
+
+    <label for="group_vars">Variables (JSON)</label>
+    <textarea id="group_vars" name="group_vars" rows="8">{{ group.vars | tojson if group else '' }}</textarea>
+
+    <div class="form-actions">
+        <button type="submit">Save</button>
+        <a href="/groups" class="btn">Cancel</a>
+    </div>
+</form>
+{% endblock %}

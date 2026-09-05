@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Ansible Inventory{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ host_count }}</h3>
+        <p>Hosts</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ group_count }}</h3>
+        <p>Groups</p>
+    </div>
+</div>
+<div class="actions">
+    <a href="/hosts/add" class="btn btn-primary">Add Host</a>
+    <a href="/groups/add" class="btn btn-primary">Add Group</a>
+</div>
+{% endblock %}

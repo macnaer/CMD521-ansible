@@ -25,8 +25,25 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 │       └── windows-common/            # Windows role
 │           ├── defaults/main.yml
 │           └── tasks/main.yml
+├── api/
+│   ├── main.py               # FastAPI app + routes
+│   ├── database.py           # SQLite connection + schema
+│   ├── models.py             # SQLAlchemy ORM models
+│   ├── schemas.py            # Pydantic validation models
+│   ├── auth.py               # Cookie-based authentication
+│   ├── templates/            # Jinja2 HTML templates
+│   │   ├── base.html
+│   │   ├── login.html
+│   │   ├── dashboard.html
+│   │   ├── hosts.html
+│   │   ├── host_form.html
+│   │   ├── groups.html
+│   │   └── group_form.html
+│   └── static/css/style.css  # Styling
 ├── scripts/
-│   └── setup-winrm.ps1       # Windows WinRM setup
+│   ├── inventory.py          # Dynamic inventory script (exec_vars)
+│   └── setup-winrm.ps1      # Windows WinRM setup
+├── requirements.txt          # Python dependencies
 └── README.md
 ```
 
@@ -79,6 +96,70 @@ ansible-playbook playbooks/show-message.yml -i inventory/production/hosts --ask-
 ```bash
 ansible-playbook playbooks/shutdown-host.yml -i inventory/production/hosts --ask-vault-pass
 ```
+
+## Dynamic Inventory API + Web UI
+
+FastAPI application with SQLite database and web interface for managing inventory.
+
+### Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+### Start API
+
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+
+### Web UI
+
+Open [http://localhost:8000/login](http://localhost:8000/login)
+
+| Default | |
+|---------|---------|
+| Username | `admin` |
+| Password | `admin` |
+
+Features:
+- **Dashboard** — overview of hosts and groups
+- **Hosts** — add, edit, delete hosts with IP and SSH user
+- **Groups** — add, edit, delete groups with JSON variables
+
+### Use with Ansible
+
+```bash
+# Run playbook with dynamic inventory
+ansible-playbook playbooks/install-packages.yml -i scripts/inventory.py
+
+# Test inventory script
+python scripts/inventory.py --list
+python scripts/inventory.py --host ubuntu
+```
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/login` | No | Login page |
+| `POST` | `/login` | No | Process login |
+| `GET` | `/logout` | Yes | Clear session |
+| `GET` | `/` | Yes | Dashboard |
+| `GET` | `/hosts` | Yes | List hosts |
+| `GET` | `/hosts/add` | Yes | Add host form |
+| `POST` | `/hosts/add` | Yes | Create host |
+| `GET` | `/hosts/{id}/edit` | Yes | Edit host form |
+| `POST` | `/hosts/{id}/edit` | Yes | Update host |
+| `POST` | `/hosts/{id}/delete` | Yes | Delete host |
+| `GET` | `/groups` | Yes | List groups |
+| `GET` | `/groups/add` | Yes | Add group form |
+| `POST` | `/groups/add` | Yes | Create group |
+| `GET` | `/groups/{id}/edit` | Yes | Edit group form |
+| `POST` | `/groups/{id}/edit` | Yes | Update group |
+| `POST` | `/groups/{id}/delete` | Yes | Delete group |
+| `GET` | `/api/inventory` | No | Ansible inventory JSON |
+| `GET` | `/api/inventory/{hostname}` | No | Host vars for Ansible |
 
 ## Quick Start
 

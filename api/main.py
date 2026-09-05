@@ -1,0 +1,320 @@
+"""FastAPI application — inventory API + Web UI."""
+
+import json
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from api.database import init_db, get_db, SessionLocal
+from api.models import Group, Host, User
+from api.schemas import HostCreate, HostUpdate, GroupCreate, GroupUpdate
+from api.auth import get_current_user, hash_password, verify_password
+
+app = FastAPI(title="Ansible Dynamic Inventory")
+
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
+
+templates = Jinja2Templates(directory="api/templates")
+
+
+@app.on_event("startup")
+def startup():
+    init_db()
+    _seed_default_user()
+
+
+def _seed_default_user():
+    db = SessionLocal()
+    try:
+        if not db.query(User).first():
+            db.add(User(username="admin", password_hash=hash_password("admin")))
+            db.commit()
+    finally:
+        db.close()
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+def login_submit(request: Request, username: str = Form(...), password: str = Form(...)):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).first()
+        if user and verify_password(password, user.password_hash):
+            response = RedirectResponse(url="/", status_code=303)
+            response.set_cookie(key="session_id", value=user.username, httponly=True)
+            return response
+        return templates.TemplateResponse(
+            "login.html", {"request": request, "error": "Invalid credentials"}
+        )
+    finally:
+        db.close()
+
+
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("session_id")
+    return response
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard(request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        host_count = db.query(Host).count()
+        group_count = db.query(Group).count()
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {"request": request, "user": user, "host_count": host_count, "group_count": group_count},
+        )
+    finally:
+        db.close()
+
+
+# ── Hosts CRUD ────────────────────────────────────────────────────────────────
+
+@app.get("/hosts", response_class=HTMLResponse)
+def hosts_list(request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        hosts = db.query(Host).all()
+        groups = db.query(Group).all()
+        return templates.TemplateResponse(
+            "hosts.html", {"request": request, "user": user, "hosts": hosts, "groups": groups}
+        )
+    finally:
+        db.close()
+
+
+@app.get("/hosts/add", response_class=HTMLResponse)
+def host_add_form(request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        groups = db.query(Group).all()
+        return templates.TemplateResponse(
+            "host_form.html", {"request": request, "user": user, "groups": groups, "host": None}
+        )
+    finally:
+        db.close()
+
+
+@app.post("/hosts/add")
+def host_add_submit(
+    request: Request,
+    name: str = Form(...),
+    group_id: str = Form(""),
+    host_ip: str = Form(""),
+    host_user: str = Form(""),
+    user: User = Depends(get_current_user),
+):
+    db = SessionLocal()
+    try:
+        vars_dict = {}
+        if host_ip:
+            vars_dict["ansible_host"] = host_ip
+        if host_user:
+            vars_dict["ansible_user"] = host_user
+
+        gid = int(group_id) if group_id else None
+        host = Host(name=name, group_id=gid, vars=vars_dict)
+        db.add(host)
+        db.commit()
+        return RedirectResponse(url="/hosts", status_code=303)
+    finally:
+        db.close()
+
+
+@app.get("/hosts/{host_id}/edit", response_class=HTMLResponse)
+def host_edit_form(host_id: int, request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        host = db.query(Host).filter(Host.id == host_id).first()
+        if not host:
+            raise HTTPException(status_code=404)
+        groups = db.query(Group).all()
+        return templates.TemplateResponse(
+            "host_form.html", {"request": request, "user": user, "groups": groups, "host": host}
+        )
+    finally:
+        db.close()
+
+
+@app.post("/hosts/{host_id}/edit")
+def host_edit_submit(
+    host_id: int,
+    request: Request,
+    name: str = Form(...),
+    group_id: str = Form(""),
+    host_ip: str = Form(""),
+    host_user: str = Form(""),
+    user: User = Depends(get_current_user),
+):
+    db = SessionLocal()
+    try:
+        host = db.query(Host).filter(Host.id == host_id).first()
+        if not host:
+            raise HTTPException(status_code=404)
+
+        vars_dict = {}
+        if host_ip:
+            vars_dict["ansible_host"] = host_ip
+        if host_user:
+            vars_dict["ansible_user"] = host_user
+
+        host.name = name
+        host.group_id = int(group_id) if group_id else None
+        host.vars = vars_dict
+        db.commit()
+        return RedirectResponse(url="/hosts", status_code=303)
+    finally:
+        db.close()
+
+
+@app.post("/hosts/{host_id}/delete")
+def host_delete(host_id: int, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        host = db.query(Host).filter(Host.id == host_id).first()
+        if host:
+            db.delete(host)
+            db.commit()
+        return RedirectResponse(url="/hosts", status_code=303)
+    finally:
+        db.close()
+
+
+# ── Groups CRUD ───────────────────────────────────────────────────────────────
+
+@app.get("/groups", response_class=HTMLResponse)
+def groups_list(request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        groups = db.query(Group).all()
+        return templates.TemplateResponse(
+            "groups.html", {"request": request, "user": user, "groups": groups}
+        )
+    finally:
+        db.close()
+
+
+@app.get("/groups/add", response_class=HTMLResponse)
+def group_add_form(request: Request, user: User = Depends(get_current_user)):
+    return templates.TemplateResponse(
+        "group_form.html", {"request": request, "user": user, "group": None}
+    )
+
+
+@app.post("/groups/add")
+def group_add_submit(
+    request: Request,
+    name: str = Form(...),
+    group_vars: str = Form(""),
+    user: User = Depends(get_current_user),
+):
+    db = SessionLocal()
+    try:
+        vars_dict = json.loads(group_vars) if group_vars.strip() else {}
+        group = Group(name=name, vars=vars_dict)
+        db.add(group)
+        db.commit()
+        return RedirectResponse(url="/groups", status_code=303)
+    finally:
+        db.close()
+
+
+@app.get("/groups/{group_id}/edit", response_class=HTMLResponse)
+def group_edit_form(group_id: int, request: Request, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        group = db.query(Group).filter(Group.id == group_id).first()
+        if not group:
+            raise HTTPException(status_code=404)
+        return templates.TemplateResponse(
+            "group_form.html", {"request": request, "user": user, "group": group}
+        )
+    finally:
+        db.close()
+
+
+@app.post("/groups/{group_id}/edit")
+def group_edit_submit(
+    group_id: int,
+    request: Request,
+    name: str = Form(...),
+    group_vars: str = Form(""),
+    user: User = Depends(get_current_user),
+):
+    db = SessionLocal()
+    try:
+        group = db.query(Group).filter(Group.id == group_id).first()
+        if not group:
+            raise HTTPException(status_code=404)
+        vars_dict = json.loads(group_vars) if group_vars.strip() else {}
+        group.name = name
+        group.vars = vars_dict
+        db.commit()
+        return RedirectResponse(url="/groups", status_code=303)
+    finally:
+        db.close()
+
+
+@app.post("/groups/{group_id}/delete")
+def group_delete(group_id: int, user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        group = db.query(Group).filter(Group.id == group_id).first()
+        if group:
+            db.delete(group)
+            db.commit()
+        return RedirectResponse(url="/groups", status_code=303)
+    finally:
+        db.close()
+
+
+# ── Ansible Inventory API (no auth) ──────────────────────────────────────────
+
+@app.get("/api/inventory")
+def api_inventory():
+    db = SessionLocal()
+    try:
+        hosts = db.query(Host).all()
+        groups = db.query(Group).all()
+
+        inventory = {
+            "_meta": {"hostvars": {}},
+        }
+
+        for group in groups:
+            group_hosts = [h.name for h in hosts if h.group_id == group.id]
+            inventory[group.name] = {
+                "hosts": group_hosts,
+                "vars": group.vars or {},
+            }
+
+        for host in hosts:
+            inventory["_meta"]["hostvars"][host.name] = host.vars or {}
+
+        return JSONResponse(content=inventory)
+    finally:
+        db.close()
+
+
+@app.get("/api/inventory/{hostname}")
+def api_inventory_host(hostname: str):
+    db = SessionLocal()
+    try:
+        host = db.query(Host).filter(Host.name == hostname).first()
+        if not host:
+            return JSONResponse(content={}, status_code=404)
+        return JSONResponse(content=host.vars or {})
+    finally:
+        db.close()

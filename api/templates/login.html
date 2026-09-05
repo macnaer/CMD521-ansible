@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Login — Ansible Inventory{% endblock %}
+{% block content %}
+<div class="login-container">
+    <h1>Ansible Inventory</h1>
+    <form method="post" action="/login" class="login-form">
+        <h2>Login</h2>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autofocus>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+</div>
+{% endblock %}
