@@ -1,3 +1,0 @@
-plugin: fastapi_inventory
-api_url: "http://localhost:8000/api/hosts"
-cache: false
