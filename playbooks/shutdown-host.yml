@@ -1,0 +1,6 @@
+---
+- name: Shut down Windows host
+  hosts: "{{ target_hosts | default('windows_hosts') }}"
+  tasks:
+    - name: Shut down the computer
+      ansible.windows.win_shell: Stop-Computer -Force

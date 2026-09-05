@@ -16,6 +16,8 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 ├── playbooks/
 │   ├── install-packages.yml           # Install Linux packages (uses role)
 │   ├── install-windows-packages.yml   # Install Windows packages (uses role)
+│   ├── show-message.yml               # Show Windows message box
+│   ├── shutdown-host.yml              # Shut down Windows host
 │   └── roles/
 │       ├── common/                    # Linux role
 │       │   ├── defaults/main.yml
@@ -34,7 +36,7 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 |------|----|----|------|
 | amazon-linux | 13.60.184.149 | Amazon Linux | ec2-user |
 | ubuntu | 16.171.193.140 | Ubuntu | ubuntu |
-| windows | 10.10.33.122 | Windows | master |
+| windows | 10.20.42.122 | Windows | master |
 
 ## Playbooks
 
@@ -42,6 +44,8 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 |----------|-------------|
 | `install-packages.yml` | Install common Linux packages (mc, net-tools, curl, wget, git, vim, htop, unzip, tree, nano) |
 | `install-windows-packages.yml` | Install common Windows packages (Chrome, WinRAR, Wireshark, Notepad++, Git) |
+| `show-message.yml` | Show a Windows message box with custom text |
+| `shutdown-host.yml` | Shut down a Windows host |
 
 ### Run Linux playbook
 ```bash
@@ -60,6 +64,20 @@ ansible-playbook playbooks/install-windows-packages.yml -i inventory/production/
 
 # Target specific host:
 ansible-playbook playbooks/install-windows-packages.yml -i inventory/production/hosts -e "target_hosts=windows" --ask-vault-pass
+```
+
+### Show message on Windows
+```bash
+# Default message:
+ansible-playbook playbooks/show-message.yml -i inventory/production/hosts --ask-vault-pass
+
+# Custom message:
+ansible-playbook playbooks/show-message.yml -i inventory/production/hosts --ask-vault-pass -e "user_message=Hello World!"
+```
+
+### Shut down Windows host
+```bash
+ansible-playbook playbooks/shutdown-host.yml -i inventory/production/hosts --ask-vault-pass
 ```
 
 ## Quick Start

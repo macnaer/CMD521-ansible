@@ -1,0 +1,10 @@
+---
+- name: Show message on screen
+  hosts: "{{ target_hosts | default('windows_hosts') }}"
+  tasks:
+    - name: Display message box
+      ansible.windows.win_shell: |
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.MessageBox]::Show("{{ message }}", "Ansible Message") | Out-Null
+      vars:
+        message: "{{ user_message | default('Hello from Ansible!') }}"
