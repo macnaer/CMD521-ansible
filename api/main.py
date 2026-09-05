@@ -38,7 +38,7 @@ def _seed_default_user():
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(name="login.html", request=request)
 
 
 @app.post("/login")
@@ -51,7 +51,7 @@ def login_submit(request: Request, username: str = Form(...), password: str = Fo
             response.set_cookie(key="session_id", value=user.username, httponly=True)
             return response
         return templates.TemplateResponse(
-            "login.html", {"request": request, "error": "Invalid credentials"}
+            name="login.html", request=request, context={"error": "Invalid credentials"}
         )
     finally:
         db.close()
@@ -73,8 +73,8 @@ def dashboard(request: Request, user: User = Depends(get_current_user)):
         host_count = db.query(Host).count()
         group_count = db.query(Group).count()
         return templates.TemplateResponse(
-            "dashboard.html",
-            {"request": request, "user": user, "host_count": host_count, "group_count": group_count},
+            name="dashboard.html", request=request,
+            context={"user": user, "host_count": host_count, "group_count": group_count},
         )
     finally:
         db.close()
@@ -89,7 +89,8 @@ def hosts_list(request: Request, user: User = Depends(get_current_user)):
         hosts = db.query(Host).all()
         groups = db.query(Group).all()
         return templates.TemplateResponse(
-            "hosts.html", {"request": request, "user": user, "hosts": hosts, "groups": groups}
+            name="hosts.html", request=request,
+            context={"user": user, "hosts": hosts, "groups": groups},
         )
     finally:
         db.close()
@@ -101,7 +102,8 @@ def host_add_form(request: Request, user: User = Depends(get_current_user)):
     try:
         groups = db.query(Group).all()
         return templates.TemplateResponse(
-            "host_form.html", {"request": request, "user": user, "groups": groups, "host": None}
+            name="host_form.html", request=request,
+            context={"user": user, "groups": groups, "host": None},
         )
     finally:
         db.close()
@@ -142,7 +144,8 @@ def host_edit_form(host_id: int, request: Request, user: User = Depends(get_curr
             raise HTTPException(status_code=404)
         groups = db.query(Group).all()
         return templates.TemplateResponse(
-            "host_form.html", {"request": request, "user": user, "groups": groups, "host": host}
+            name="host_form.html", request=request,
+            context={"user": user, "groups": groups, "host": host},
         )
     finally:
         db.close()
@@ -200,7 +203,8 @@ def groups_list(request: Request, user: User = Depends(get_current_user)):
     try:
         groups = db.query(Group).all()
         return templates.TemplateResponse(
-            "groups.html", {"request": request, "user": user, "groups": groups}
+            name="groups.html", request=request,
+            context={"user": user, "groups": groups},
         )
     finally:
         db.close()
@@ -209,7 +213,8 @@ def groups_list(request: Request, user: User = Depends(get_current_user)):
 @app.get("/groups/add", response_class=HTMLResponse)
 def group_add_form(request: Request, user: User = Depends(get_current_user)):
     return templates.TemplateResponse(
-        "group_form.html", {"request": request, "user": user, "group": None}
+        name="group_form.html", request=request,
+        context={"user": user, "group": None},
     )
 
 
@@ -239,7 +244,8 @@ def group_edit_form(group_id: int, request: Request, user: User = Depends(get_cu
         if not group:
             raise HTTPException(status_code=404)
         return templates.TemplateResponse(
-            "group_form.html", {"request": request, "user": user, "group": group}
+            name="group_form.html", request=request,
+            context={"user": user, "group": group},
         )
     finally:
         db.close()
