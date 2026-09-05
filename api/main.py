@@ -237,6 +237,7 @@ def group_add_submit(
     ansible_winrm_transport: str = Form(""),
     ansible_winrm_server_cert_validation: str = Form(""),
     ansible_password: str = Form(""),
+    ansible_become_user: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
@@ -262,6 +263,8 @@ def group_add_submit(
             vars_dict["ansible_winrm_server_cert_validation"] = ansible_winrm_server_cert_validation
         if ansible_password:
             vars_dict["ansible_password"] = ansible_password
+        if ansible_become_user:
+            vars_dict["ansible_become_user"] = ansible_become_user
         group = Group(name=name, vars=vars_dict)
         db.add(group)
         db.commit()
@@ -300,6 +303,7 @@ def group_edit_submit(
     ansible_winrm_transport: str = Form(""),
     ansible_winrm_server_cert_validation: str = Form(""),
     ansible_password: str = Form(""),
+    ansible_become_user: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
@@ -328,6 +332,8 @@ def group_edit_submit(
             vars_dict["ansible_winrm_server_cert_validation"] = ansible_winrm_server_cert_validation
         if ansible_password:
             vars_dict["ansible_password"] = ansible_password
+        if ansible_become_user:
+            vars_dict["ansible_become_user"] = ansible_become_user
         group.name = name
         group.vars = vars_dict
         db.commit()

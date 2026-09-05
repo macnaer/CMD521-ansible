@@ -65,6 +65,11 @@
     <input type="password" id="ansible_password" name="ansible_password"
            value="{{ group.vars.get('ansible_password', '') if group else '' }}">
 
+    <label for="ansible_become_user">Become User</label>
+    <input type="text" id="ansible_become_user" name="ansible_become_user"
+           value="{{ group.vars.get('ansible_become_user', '') if group else '' }}"
+           placeholder="Administrator">
+
     <div class="form-actions">
         <button type="submit">Save</button>
         <a href="/groups" class="btn">Cancel</a>

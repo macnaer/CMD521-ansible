@@ -40,7 +40,7 @@ def get_list():
         inventory["ungrouped"] = {"hosts": grouped["ungrouped"]}
 
     for host in hosts:
-        hostvars = {k: v for k, v in host.items() if k != "group_name"}
+        hostvars = {k: v for k, v in host.items() if k not in ("name", "group_name")}
         inventory["_meta"]["hostvars"][host["name"]] = hostvars
 
     return inventory
@@ -50,7 +50,7 @@ def get_host(hostname):
     hosts = fetch("/api/hosts")
     for h in hosts:
         if h["name"] == hostname:
-            return {k: v for k, v in h.items() if k != "group_name"}
+            return {k: v for k, v in h.items() if k not in ("name", "group_name")}
     return {}
 
 
