@@ -351,39 +351,42 @@ def group_delete(group_id: int, user: User = Depends(get_current_user)):
 
 # ── Ansible Inventory API (no auth) ──────────────────────────────────────────
 
-@app.get("/api/inventory")
-def api_inventory():
+@app.get("/api/hosts")
+def api_hosts():
     db = SessionLocal()
     try:
         hosts = db.query(Host).all()
         groups = db.query(Group).all()
+        group_vars_map = {g.name: g.vars or {} for g in groups}
 
-        inventory = {
-            "_meta": {"hostvars": {}},
-        }
-
-        for group in groups:
-            group_hosts = [h.name for h in hosts if h.group_id == group.id]
-            inventory[group.name] = {
-                "hosts": group_hosts,
-                "vars": group.vars or {},
-            }
-
+        result = []
         for host in hosts:
-            inventory["_meta"]["hostvars"][host.name] = host.vars or {}
+            entry = {"name": host.name}
 
-        return JSONResponse(content=inventory)
+            if host.group_id:
+                group = db.query(Group).filter(Group.id == host.group_id).first()
+                if group:
+                    entry["group_name"] = group.name
+                    for k, v in (group.vars or {}).items():
+                        if k not in (host.vars or {}):
+                            entry[k] = v
+
+            for k, v in (host.vars or {}).items():
+                entry[k] = v
+
+            result.append(entry)
+
+        return JSONResponse(content=result)
     finally:
         db.close()
 
 
-@app.get("/api/inventory/{hostname}")
-def api_inventory_host(hostname: str):
+@app.get("/api/groups")
+def api_groups():
     db = SessionLocal()
     try:
-        host = db.query(Host).filter(Host.name == hostname).first()
-        if not host:
-            return JSONResponse(content={}, status_code=404)
-        return JSONResponse(content=host.vars or {})
+        groups = db.query(Group).all()
+        result = [{"name": g.name, "vars": g.vars or {}} for g in groups]
+        return JSONResponse(content=result)
     finally:
         db.close()

@@ -8,11 +8,15 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 .
 ├── .agents/skills/           # Agent skills for Ansible and Git
 ├── inventory/
-│   └── production/
-│       ├── hosts             # Inventory file (INI)
-│       └── group_vars/
-│           ├── aws_hosts.yml
-│           └── windows_hosts.yml
+│   ├── production/
+│   │   ├── hosts             # Static inventory file (INI)
+│   │   └── group_vars/
+│   │       ├── aws_hosts.yml
+│   │       └── windows_hosts.yml
+│   └── fastapi_inventory.yml # Dynamic inventory (plugin config)
+├── plugins/
+│   └── inventory/
+│       └── fastapi_inventory.py  # Custom inventory plugin
 ├── playbooks/
 │   ├── install-packages.yml           # Install Linux packages (uses role)
 │   ├── install-windows-packages.yml   # Install Windows packages (uses role)
@@ -41,9 +45,9 @@ Ansible playbooks and infrastructure automation for AWS hosts.
 │   │   └── group_form.html
 │   └── static/css/style.css  # Styling
 ├── scripts/
-│   ├── inventory.py          # Dynamic inventory script (exec_vars)
-│   └── setup-winrm.ps1      # Windows WinRM setup
-├── requirements.txt          # Python dependencies
+│   └── setup-winrm.ps1       # Windows WinRM setup
+├── ansible.cfg                # Ansible configuration
+├── requirements.txt           # Python dependencies
 └── README.md
 ```
 
@@ -124,18 +128,23 @@ Open [http://localhost:8000/login](http://localhost:8000/login)
 
 Features:
 - **Dashboard** — overview of hosts and groups
-- **Hosts** — add, edit, delete hosts with IP and SSH user
-- **Groups** — add, edit, delete groups with JSON variables
+- **Hosts** — add, edit, delete hosts with IP, SSH user, and password
+- **Groups** — add, edit, delete groups with HTML form inputs
 
-### Use with Ansible
+### Use with Ansible (Inventory Plugin)
+
+The project uses a custom Ansible inventory plugin that fetches hosts from the API.
 
 ```bash
-# Run playbook with dynamic inventory
-ansible-playbook playbooks/install-packages.yml -i scripts/inventory.py
+# Run playbook with dynamic inventory (default in ansible.cfg)
+ansible-playbook playbooks/install-packages.yml
 
-# Test inventory script
-python scripts/inventory.py --list
-python scripts/inventory.py --host ubuntu
+# Or explicitly specify inventory
+ansible-playbook playbooks/install-packages.yml -i inventory/fastapi_inventory.yml
+
+# Test inventory
+ansible-inventory -i inventory/fastapi_inventory.yml --list
+ansible-inventory -i inventory/fastapi_inventory.yml --graph
 ```
 
 ### API Endpoints
@@ -158,8 +167,8 @@ python scripts/inventory.py --host ubuntu
 | `GET` | `/groups/{id}/edit` | Yes | Edit group form |
 | `POST` | `/groups/{id}/edit` | Yes | Update group |
 | `POST` | `/groups/{id}/delete` | Yes | Delete group |
-| `GET` | `/api/inventory` | No | Ansible inventory JSON |
-| `GET` | `/api/inventory/{hostname}` | No | Host vars for Ansible |
+| `GET` | `/api/hosts` | No | Hosts list for inventory plugin |
+| `GET` | `/api/groups` | No | Groups list for inventory plugin |
 
 ## Quick Start
 
