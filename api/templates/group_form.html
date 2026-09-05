@@ -6,8 +6,64 @@
     <label for="name">Group Name</label>
     <input type="text" id="name" name="name" value="{{ group.name if group else '' }}" required>
 
-    <label for="group_vars">Variables (JSON)</label>
-    <textarea id="group_vars" name="group_vars" rows="8">{{ group.vars | tojson if group else '' }}</textarea>
+    <h3>Linux (SSH)</h3>
+
+    <label for="ansible_become">Become (sudo)</label>
+    <select id="ansible_become" name="ansible_become">
+        <option value="">—</option>
+        <option value="yes" {{ "selected" if group and group.vars.get('ansible_become') == 'yes' }}>Yes</option>
+        <option value="no" {{ "selected" if group and group.vars.get('ansible_become') == 'no' }}>No</option>
+    </select>
+
+    <label for="ansible_become_method">Become Method</label>
+    <select id="ansible_become_method" name="ansible_become_method">
+        <option value="">—</option>
+        <option value="sudo" {{ "selected" if group and group.vars.get('ansible_become_method') == 'sudo' }}>sudo</option>
+        <option value="runas" {{ "selected" if group and group.vars.get('ansible_become_method') == 'runas' }}>runas</option>
+    </select>
+
+    <label for="ansible_ssh_private_key_file">SSH Key File</label>
+    <input type="text" id="ansible_ssh_private_key_file" name="ansible_ssh_private_key_file"
+           value="{{ group.vars.get('ansible_ssh_private_key_file', '') if group else '' }}">
+
+    <label for="ansible_python_interpreter">Python Interpreter</label>
+    <input type="text" id="ansible_python_interpreter" name="ansible_python_interpreter"
+           value="{{ group.vars.get('ansible_python_interpreter', '') if group else '' }}">
+
+    <label for="ansible_ssh_common_args">SSH Common Args</label>
+    <input type="text" id="ansible_ssh_common_args" name="ansible_ssh_common_args"
+           value="{{ group.vars.get('ansible_ssh_common_args', '') if group else '' }}">
+
+    <h3>Windows (WinRM)</h3>
+
+    <label for="ansible_connection">Connection Type</label>
+    <select id="ansible_connection" name="ansible_connection">
+        <option value="">—</option>
+        <option value="ssh" {{ "selected" if group and group.vars.get('ansible_connection') == 'ssh' }}>ssh</option>
+        <option value="winrm" {{ "selected" if group and group.vars.get('ansible_connection') == 'winrm' }}>winrm</option>
+    </select>
+
+    <label for="ansible_port">Port</label>
+    <input type="number" id="ansible_port" name="ansible_port"
+           value="{{ group.vars.get('ansible_port', '') if group else '' }}">
+
+    <label for="ansible_winrm_transport">WinRM Transport</label>
+    <select id="ansible_winrm_transport" name="ansible_winrm_transport">
+        <option value="">—</option>
+        <option value="ntlm" {{ "selected" if group and group.vars.get('ansible_winrm_transport') == 'ntlm' }}>ntlm</option>
+        <option value="kerberos" {{ "selected" if group and group.vars.get('ansible_winrm_transport') == 'kerberos' }}>kerberos</option>
+    </select>
+
+    <label for="ansible_winrm_server_cert_validation">WinRM SSL Validation</label>
+    <select id="ansible_winrm_server_cert_validation" name="ansible_winrm_server_cert_validation">
+        <option value="">—</option>
+        <option value="ignore" {{ "selected" if group and group.vars.get('ansible_winrm_server_cert_validation') == 'ignore' }}>ignore</option>
+        <option value="validate" {{ "selected" if group and group.vars.get('ansible_winrm_server_cert_validation') == 'validate' }}>validate</option>
+    </select>
+
+    <label for="ansible_password">Password</label>
+    <input type="password" id="ansible_password" name="ansible_password"
+           value="{{ group.vars.get('ansible_password', '') if group else '' }}">
 
     <div class="form-actions">
         <button type="submit">Save</button>

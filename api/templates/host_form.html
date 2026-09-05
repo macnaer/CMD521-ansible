@@ -20,6 +20,9 @@
     <label for="host_user">SSH User (ansible_user)</label>
     <input type="text" id="host_user" name="host_user" value="{{ host.vars.get('ansible_user', '') if host else '' }}">
 
+    <label for="host_password">Password (ansible_password)</label>
+    <input type="password" id="host_password" name="host_password" value="{{ host.vars.get('ansible_password', '') if host else '' }}">
+
     <div class="form-actions">
         <button type="submit">Save</button>
         <a href="/hosts" class="btn">Cancel</a>

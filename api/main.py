@@ -1,6 +1,5 @@
 """FastAPI application — inventory API + Web UI."""
 
-import json
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -116,6 +115,7 @@ def host_add_submit(
     group_id: str = Form(""),
     host_ip: str = Form(""),
     host_user: str = Form(""),
+    host_password: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
@@ -125,6 +125,8 @@ def host_add_submit(
             vars_dict["ansible_host"] = host_ip
         if host_user:
             vars_dict["ansible_user"] = host_user
+        if host_password:
+            vars_dict["ansible_password"] = host_password
 
         gid = int(group_id) if group_id else None
         host = Host(name=name, group_id=gid, vars=vars_dict)
@@ -159,6 +161,7 @@ def host_edit_submit(
     group_id: str = Form(""),
     host_ip: str = Form(""),
     host_user: str = Form(""),
+    host_password: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
@@ -172,6 +175,8 @@ def host_edit_submit(
             vars_dict["ansible_host"] = host_ip
         if host_user:
             vars_dict["ansible_user"] = host_user
+        if host_password:
+            vars_dict["ansible_password"] = host_password
 
         host.name = name
         host.group_id = int(group_id) if group_id else None
@@ -222,12 +227,41 @@ def group_add_form(request: Request, user: User = Depends(get_current_user)):
 def group_add_submit(
     request: Request,
     name: str = Form(...),
-    group_vars: str = Form(""),
+    ansible_become: str = Form(""),
+    ansible_become_method: str = Form(""),
+    ansible_ssh_private_key_file: str = Form(""),
+    ansible_python_interpreter: str = Form(""),
+    ansible_ssh_common_args: str = Form(""),
+    ansible_connection: str = Form(""),
+    ansible_port: str = Form(""),
+    ansible_winrm_transport: str = Form(""),
+    ansible_winrm_server_cert_validation: str = Form(""),
+    ansible_password: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
     try:
-        vars_dict = json.loads(group_vars) if group_vars.strip() else {}
+        vars_dict = {}
+        if ansible_become:
+            vars_dict["ansible_become"] = ansible_become
+        if ansible_become_method:
+            vars_dict["ansible_become_method"] = ansible_become_method
+        if ansible_ssh_private_key_file:
+            vars_dict["ansible_ssh_private_key_file"] = ansible_ssh_private_key_file
+        if ansible_python_interpreter:
+            vars_dict["ansible_python_interpreter"] = ansible_python_interpreter
+        if ansible_ssh_common_args:
+            vars_dict["ansible_ssh_common_args"] = ansible_ssh_common_args
+        if ansible_connection:
+            vars_dict["ansible_connection"] = ansible_connection
+        if ansible_port:
+            vars_dict["ansible_port"] = int(ansible_port)
+        if ansible_winrm_transport:
+            vars_dict["ansible_winrm_transport"] = ansible_winrm_transport
+        if ansible_winrm_server_cert_validation:
+            vars_dict["ansible_winrm_server_cert_validation"] = ansible_winrm_server_cert_validation
+        if ansible_password:
+            vars_dict["ansible_password"] = ansible_password
         group = Group(name=name, vars=vars_dict)
         db.add(group)
         db.commit()
@@ -256,7 +290,16 @@ def group_edit_submit(
     group_id: int,
     request: Request,
     name: str = Form(...),
-    group_vars: str = Form(""),
+    ansible_become: str = Form(""),
+    ansible_become_method: str = Form(""),
+    ansible_ssh_private_key_file: str = Form(""),
+    ansible_python_interpreter: str = Form(""),
+    ansible_ssh_common_args: str = Form(""),
+    ansible_connection: str = Form(""),
+    ansible_port: str = Form(""),
+    ansible_winrm_transport: str = Form(""),
+    ansible_winrm_server_cert_validation: str = Form(""),
+    ansible_password: str = Form(""),
     user: User = Depends(get_current_user),
 ):
     db = SessionLocal()
@@ -264,7 +307,27 @@ def group_edit_submit(
         group = db.query(Group).filter(Group.id == group_id).first()
         if not group:
             raise HTTPException(status_code=404)
-        vars_dict = json.loads(group_vars) if group_vars.strip() else {}
+        vars_dict = {}
+        if ansible_become:
+            vars_dict["ansible_become"] = ansible_become
+        if ansible_become_method:
+            vars_dict["ansible_become_method"] = ansible_become_method
+        if ansible_ssh_private_key_file:
+            vars_dict["ansible_ssh_private_key_file"] = ansible_ssh_private_key_file
+        if ansible_python_interpreter:
+            vars_dict["ansible_python_interpreter"] = ansible_python_interpreter
+        if ansible_ssh_common_args:
+            vars_dict["ansible_ssh_common_args"] = ansible_ssh_common_args
+        if ansible_connection:
+            vars_dict["ansible_connection"] = ansible_connection
+        if ansible_port:
+            vars_dict["ansible_port"] = int(ansible_port)
+        if ansible_winrm_transport:
+            vars_dict["ansible_winrm_transport"] = ansible_winrm_transport
+        if ansible_winrm_server_cert_validation:
+            vars_dict["ansible_winrm_server_cert_validation"] = ansible_winrm_server_cert_validation
+        if ansible_password:
+            vars_dict["ansible_password"] = ansible_password
         group.name = name
         group.vars = vars_dict
         db.commit()
