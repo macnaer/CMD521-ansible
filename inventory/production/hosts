@@ -10,7 +10,7 @@ ansible_become=yes
 ansible_become_method=sudo
 
 [windows_hosts]
-windows    ansible_host=10.10.33.122    ansible_user=master
+windows    ansible_host=10.20.42.122    ansible_user=master
 
 [windows_hosts:vars]
 ansible_connection=winrm
